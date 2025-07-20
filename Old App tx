@@ -1,0 +1,548 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { AppData, LocationData, OwmCurrentWeather, OwmForecast, OwmForecastItem, TomorrowCurrentData, TomorrowForecastData, TomorrowForecastTimeline, Units, WeatherProvider, ActiveTab, ModalContent } from './types';
+import { fetchWeatherData, fetchCitySuggestions, formatTime, degreesToCardinal, getAccuWeatherIconUrl, getThemeClassName } from './services/api';
+import { SearchIcon, LocationIcon, HomeIcon, BookmarkIcon, RemoveFavoriteIcon, ThermometerIcon, HumidityIcon, WindIcon, WindDirectionIcon as WindDirSvg, PressureIcon, UvIndexIcon, SunriseIcon, SunsetIcon } from './components/Icons';
+import { MapTabs, MapModal } from './components/MapComponents';
+
+declare var Awesomplete: any; // From script tag
+
+const useFavorites = (currentCityName: string | null) => {
+    const [favorites, setFavorites] = useState<string[]>([]);
+    const [isFavorite, setIsFavorite] = useState(false);
+
+    const updateFavorites = useCallback((newFavorites: string[]) => {
+        try {
+            localStorage.setItem('weatherAppFavorites', JSON.stringify(newFavorites));
+            setFavorites(newFavorites);
+        } catch (e) {
+            console.error("Could not save favorites:", e);
+        }
+    }, []);
+
+    useEffect(() => {
+        try {
+            const storedFavorites = localStorage.getItem('weatherAppFavorites');
+            const loadedFavorites: string[] = storedFavorites ? JSON.parse(storedFavorites) : [];
+            setFavorites(Array.isArray(loadedFavorites) ? loadedFavorites : []);
+        } catch (e) {
+            console.error("Could not load favorites:", e);
+            setFavorites([]);
+        }
+    }, []);
+
+    useEffect(() => {
+        setIsFavorite(!!currentCityName && favorites.includes(currentCityName));
+    }, [currentCityName, favorites]);
+
+    const toggleFavorite = useCallback(() => {
+        if (!currentCityName) return;
+        const newFavorites = favorites.includes(currentCityName)
+            ? favorites.filter(fav => fav !== currentCityName)
+            : [...favorites, currentCityName];
+        updateFavorites(newFavorites);
+    }, [currentCityName, favorites, updateFavorites]);
+    
+    const removeFavorite = useCallback((city: string) => {
+        const newFavorites = favorites.filter(fav => fav !== city);
+        updateFavorites(newFavorites);
+    }, [favorites, updateFavorites]);
+
+    return { favorites, isFavorite, toggleFavorite, removeFavorite };
+};
+
+const SkeletonLoader: React.FC = () => (
+    <div className="animate-pulse grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        <div className="bg-gray-300/40 p-6 rounded-xl">
+            <div className="h-6 bg-gray-400/50 rounded w-3/4 mb-5"></div>
+            <div className="flex items-center justify-between mb-5">
+                <div>
+                    <div className="h-12 bg-gray-400/50 rounded w-24 mb-2"></div>
+                    <div className="h-5 bg-gray-400/50 rounded w-32"></div>
+                </div>
+                <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-400/50 rounded-full"></div>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-4">
+                {[...Array(7)].map((_, i) => <div key={i} className="h-4 bg-gray-400/50 rounded w-full"></div>)}
+            </div>
+        </div>
+        <div className="bg-gray-300/40 p-4 rounded-xl">
+             <div className="flex space-x-4 border-b border-gray-400/30 mb-4">
+                <div className="h-8 bg-gray-400/50 rounded w-1/3"></div>
+                <div className="h-8 bg-gray-400/50 rounded w-1/3"></div>
+            </div>
+            <div className="h-[350px] bg-gray-400/50 rounded-lg"></div>
+        </div>
+        <div className="md:col-span-2 bg-gray-300/40 p-6 rounded-xl">
+             <div className="h-6 bg-gray-400/50 rounded w-1/3 mb-5"></div>
+             <div className="flex space-x-3 overflow-x-hidden pb-4">
+                 {[...Array(7)].map((_, i) => <div key={i} className="flex-shrink-0 w-24 h-32 bg-gray-400/50 rounded-xl"></div>)}
+             </div>
+        </div>
+    </div>
+);
+
+
+const Header: React.FC<{
+    onSearch: (city: string) => void;
+    onGeolocate: () => void;
+    units: Units;
+    setUnits: (units: Units) => void;
+    provider: WeatherProvider;
+    setProvider: (provider: WeatherProvider) => void;
+    favorites: string[];
+    removeFavorite: (city: string) => void;
+}> = ({ onSearch, onGeolocate, units, setUnits, provider, setProvider, favorites, removeFavorite }) => {
+    const [city, setCity] = useState('');
+    const [showFavorites, setShowFavorites] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const favoritesRef = useRef<HTMLDivElement>(null);
+    const awesompleteRef = useRef<any>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (favoritesRef.current && !favoritesRef.current.contains(event.target as Node)) {
+                setShowFavorites(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+
+        if (inputRef.current && !awesompleteRef.current) {
+            awesompleteRef.current = new Awesomplete(inputRef.current, { minChars: 3, maxItems: 10, autoFirst: true });
+            inputRef.current.addEventListener('awesomplete-selectcomplete', (e: any) => {
+                onSearch(e.text.value);
+                setCity(e.text.value);
+            });
+        }
+        return () => {
+             document.removeEventListener('mousedown', handleClickOutside);
+             awesompleteRef.current?.destroy();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleCityChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const query = e.target.value;
+        setCity(query);
+        if (query.length >= 3) {
+            const suggestions = await fetchCitySuggestions(query);
+            if (awesompleteRef.current) {
+                awesompleteRef.current.list = suggestions;
+            }
+        }
+    };
+    
+    const handleSearchClick = () => {
+      if (city.trim()) onSearch(city.trim());
+    }
+
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            if(!awesompleteRef.current || awesompleteRef.current.ul.hidden || awesompleteRef.current.index === -1) {
+                e.preventDefault();
+                handleSearchClick();
+                if(awesompleteRef.current) awesompleteRef.current.close();
+            }
+        }
+    };
+
+    return (
+        <>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6 md:mb-8 text-center">Weather Pocket Pro</h1>
+            <div className="mb-6 md:mb-8 flex flex-wrap gap-4 items-center justify-between">
+                {/* Search Group */}
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="search-input-wrapper">
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={city}
+                            onChange={handleCityChange}
+                            onKeyPress={handleKeyPress}
+                            placeholder="Enter city name..."
+                            className="search-input text-gray-800"
+                            aria-label="City Name Input with Autocomplete"
+                        />
+                    </div>
+                    <button id="searchButton" onClick={handleSearchClick} className="action-button flex-shrink-0 [&>svg]:mr-0" title="Search">
+                        <SearchIcon />
+                    </button>
+                </div>
+
+                {/* Controls Group */}
+                <div className="flex items-center gap-3 flex-wrap justify-center md:justify-end w-full md:w-auto">
+                    <button id="locationButton" onClick={onGeolocate} className="action-button flex-shrink-0">
+                        <LocationIcon />
+                        <span className="hidden sm:inline ml-1.5">My Location</span>
+                    </button>
+                     <div className="favorites-dropdown" ref={favoritesRef}>
+                        <button id="favoritesButton" title="View favorite locations" className={`action-button flex-shrink-0 ${favorites.length > 0 ? 'has-favorites' : ''}`} onClick={() => setShowFavorites(!showFavorites)}>
+                            <HomeIcon />
+                        </button>
+                         {showFavorites && (
+                            <ul id="favoritesList" className="show">
+                                {favorites.length > 0 ? favorites.map(fav => (
+                                    <li key={fav} onClick={() => { onSearch(fav); setShowFavorites(false); }}>
+                                        <span>{fav}</span>
+                                        <button className="remove-favorite-btn" title={`Remove ${fav}`} onClick={(e) => { e.stopPropagation(); removeFavorite(fav);}}>
+                                            <RemoveFavoriteIcon />
+                                        </button>
+                                    </li>
+                                )) : <li className="text-center text-gray-500 pointer-events-none">No favorites saved.</li>}
+                            </ul>
+                        )}
+                    </div>
+                    <label className="unit-toggle-label flex-shrink-0" title="Switch Units">
+                        <input type="checkbox" checked={units === 'imperial'} onChange={e => setUnits(e.target.checked ? 'imperial' : 'metric')} className="unit-toggle-input" />
+                        <span className="unit-toggle-button"></span>
+                        <span className="unit-toggle-text unit-toggle-text-metric">Metr.</span>
+                        <span className="unit-toggle-text unit-toggle-text-imperial">Imp.</span>
+                    </label>
+                    <select value={provider} onChange={e => setProvider(e.target.value as WeatherProvider)} className="search-input h-[42px] w-auto flex-shrink-0" title="Select weather provider">
+                        <option value="owm">OpenWeatherMap</option>
+                        <option value="tomorrow">Tomorrow.io</option>
+                    </select>
+                </div>
+            </div>
+        </>
+    );
+};
+
+
+const CurrentWeather: React.FC<{
+    data: AppData | null;
+    provider: WeatherProvider;
+    units: Units;
+    isFavorite: boolean;
+    toggleFavorite: () => void;
+}> = ({ data, provider, units, isFavorite, toggleFavorite }) => {
+    const tempUnit = units === 'metric' ? '°C' : '°F';
+    const speedUnit = units === 'metric' ? 'm/s' : 'mph';
+    
+    if (!data?.owm?.current) {
+        return <div className="weather-card p-6 min-h-[310px]"></div>; // Return an empty card of similar size to avoid layout shift
+    }
+
+    const owm = data.owm.current;
+    const tomorrow = data.tomorrow?.current?.data?.values;
+    let displayData;
+
+    if (provider === 'tomorrow' && tomorrow) {
+        displayData = {
+            locationName: `${owm.name}, ${owm.sys.country}`,
+            temperature: `${Math.round(tomorrow.temperature)}`,
+            description: owm.weather[0].description,
+            icon: getAccuWeatherIconUrl(owm.weather[0].icon),
+            feelsLike: `${Math.round(tomorrow.temperatureApparent)}`,
+            humidity: `${Math.round(tomorrow.humidity)}`,
+            windSpeed: tomorrow.windSpeed.toFixed(1),
+            windDirection: degreesToCardinal(tomorrow.windDirection),
+            windDeg: tomorrow.windDirection,
+            pressure: `${Math.round(tomorrow.pressureSeaLevel)}`,
+            uvIndex: tomorrow.uvIndex !== undefined ? tomorrow.uvIndex : 'N/A',
+            sunrise: formatTime(owm.sys.sunrise, owm.timezone),
+            sunset: formatTime(owm.sys.sunset, owm.timezone),
+        };
+    } else { // Default to OWM data
+        displayData = {
+            locationName: `${owm.name}, ${owm.sys.country}`,
+            temperature: `${Math.round(owm.main.temp)}`,
+            description: owm.weather[0].description,
+            icon: getAccuWeatherIconUrl(owm.weather[0].icon),
+            feelsLike: `${Math.round(owm.main.feels_like)}`,
+            humidity: `${owm.main.humidity}`,
+            windSpeed: owm.wind.speed.toFixed(1),
+            windDirection: degreesToCardinal(owm.wind.deg),
+            windDeg: owm.wind.deg,
+            pressure: `${owm.main.pressure}`,
+            uvIndex: owm.uvi !== undefined ? owm.uvi : 'N/A',
+            sunrise: formatTime(owm.sys.sunrise, owm.timezone),
+            sunset: formatTime(owm.sys.sunset, owm.timezone),
+        };
+    }
+
+    return (
+        <div className="weather-card p-6">
+            <button id="favoriteButton" className={`icon-button ${isFavorite ? 'favorited' : ''}`} title={isFavorite ? 'Remove bookmark' : 'Bookmark this location'} onClick={toggleFavorite}>
+                <BookmarkIcon />
+            </button>
+            <h2 className="text-2xl font-semibold text-gray-700 mb-4">{displayData.locationName}</h2>
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <p className="text-6xl md:text-7xl font-bold text-gray-900">{displayData.temperature}{tempUnit}</p>
+                    <p className="text-xl text-gray-700 mt-1 capitalize">{displayData.description}</p>
+                </div>
+                <img src={displayData.icon} alt={displayData.description} className="w-24 h-24 md:w-32 md:h-32 drop-shadow-lg object-contain" />
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-600 mt-4">
+                <p className="flex items-center"><ThermometerIcon /><span className="font-medium text-gray-700 mr-1">Feels like:</span> {displayData.feelsLike}{tempUnit}</p>
+                <p className="flex items-center"><HumidityIcon /><span className="font-medium text-gray-700 mr-1">Humidity:</span> {displayData.humidity}%</p>
+                <p className="flex items-center"><WindIcon /><span className="font-medium text-gray-700 mr-1">Wind:</span> {displayData.windSpeed} {speedUnit} ({displayData.windDirection}) <WindDirSvg deg={displayData.windDeg} /></p>
+                <p className="flex items-center"><PressureIcon /><span className="font-medium text-gray-700 mr-1">Pressure:</span> {displayData.pressure} hPa</p>
+                <p className="flex items-center"><UvIndexIcon /><span className="font-medium text-gray-700 mr-1">UV Index:</span> {displayData.uvIndex}</p>
+                <p className="flex items-center"><SunriseIcon /><span className="font-medium text-gray-700 mr-1">Sunrise:</span> {displayData.sunrise}</p>
+                <p className="flex items-center"><SunsetIcon /><span className="font-medium text-gray-700 mr-1">Sunset:</span> {displayData.sunset}</p>
+            </div>
+        </div>
+    );
+};
+
+const HourlyForecast: React.FC<{ data: AppData | null; provider: WeatherProvider; units: Units; }> = ({ data, provider, units }) => {
+    let hourlyItems: any[] = [];
+    
+    if (provider === 'tomorrow' && data?.tomorrow?.forecast?.timelines?.hourly && data?.owm?.forecast?.list) {
+        const owmForecastList = data.owm.forecast.list;
+        hourlyItems = data.tomorrow.forecast.timelines.hourly.slice(0, 16).map((item: TomorrowForecastTimeline) => {
+            const itemTime = new Date(item.time).getTime();
+            // Find closest OWM forecast item for the icon
+            const closestOwmItem = owmForecastList.reduce((prev, curr) => {
+                return (Math.abs(new Date(curr.dt * 1000).getTime() - itemTime) < Math.abs(new Date(prev.dt * 1000).getTime() - itemTime) ? curr : prev);
+            });
+            
+            return {
+                time: new Date(item.time).toLocaleTimeString(navigator.language, { hour: 'numeric', hour12: true }),
+                temp: Math.round(item.values.temperature || 0),
+                icon: getAccuWeatherIconUrl(closestOwmItem.weather[0].icon),
+                description: `Code: ${item.values.weatherCode}`,
+                pop: Math.round(item.values.precipitationProbability || 0),
+            };
+        });
+    } else if (data?.owm?.forecast) { // Default to OWM provider
+        hourlyItems = data.owm.forecast.list.slice(0, 16).map((item: OwmForecastItem) => ({
+            time: new Date(item.dt * 1000).toLocaleTimeString(navigator.language, { hour: 'numeric', hour12: true }),
+            temp: Math.round(item.main.temp),
+            icon: getAccuWeatherIconUrl(item.weather[0].icon),
+            description: item.weather[0].description,
+            pop: Math.round(item.pop * 100),
+        }));
+    }
+
+    if(hourlyItems.length === 0) return <div className="md:col-span-2 weather-card p-6"><h2 className="text-2xl font-semibold text-gray-700 mb-4">Hourly Forecast</h2><p>Hourly forecast data not available.</p></div>
+
+    return (
+        <div className="md:col-span-2 weather-card p-6">
+            <h2 className="text-2xl font-semibold text-gray-700 mb-4">Hourly Forecast</h2>
+            <div className="hourly-container flex space-x-3 overflow-x-auto pb-4">
+                {hourlyItems.map((item, index) => (
+                    <div key={index} className="hourly-card flex-shrink-0 w-24 text-center p-3 rounded-lg">
+                        <p className="text-xs font-medium text-gray-600">{item.time}</p>
+                        <img src={item.icon} alt={item.description} className="w-10 h-10 mx-auto drop-shadow-lg object-contain" />
+                        <p className="text-lg font-semibold text-gray-800">{item.temp}°</p>
+                        {item.pop > 5 ? <p className="text-xs text-blue-600 font-medium mt-1">{item.pop}%</p> : <p className="text-xs text-transparent mt-1">.</p>}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+const DailyForecast: React.FC<{ data: AppData | null; provider: WeatherProvider; units: Units; }> = ({ data, provider, units }) => {
+    let dailyItems: any[] = [];
+    const tempUnit = units === 'metric' ? '°C' : '°F';
+
+    if (provider === 'tomorrow' && data?.tomorrow?.forecast?.timelines?.daily && data?.owm?.forecast?.list) {
+        const owmForecastList = data.owm.forecast.list;
+        dailyItems = data.tomorrow.forecast.timelines.daily.slice(0, 5).map(item => {
+            const itemDate = new Date(item.time).toISOString().split('T')[0];
+            const owmIconsForDay: { [key: string]: number } = {};
+            owmForecastList
+                .filter(owmItem => new Date(owmItem.dt * 1000).toISOString().split('T')[0] === itemDate)
+                .forEach(owmItem => {
+                    const icon = owmItem.weather[0].icon;
+                    owmIconsForDay[icon] = (owmIconsForDay[icon] || 0) + 1;
+                });
+            const repIcon = Object.keys(owmIconsForDay).length > 0
+                ? Object.keys(owmIconsForDay).reduce((a, b) => owmIconsForDay[a] > owmIconsForDay[b] ? a : b)
+                : null;
+            return {
+                day: new Date(item.time).toLocaleDateString(navigator.language, { weekday: 'short' }),
+                maxTemp: Math.round(item.values.temperatureMax || 0),
+                minTemp: Math.round(item.values.temperatureMin || 0),
+                icon: getAccuWeatherIconUrl(repIcon),
+                description: `Code: ${item.values.weatherCode}`
+            };
+        });
+    } else if (data?.owm?.forecast) { // Default to OWM logic
+        const dailyData: { [key:string]: any } = {};
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        data.owm.forecast.list.forEach(item => {
+            const itemDate = new Date(item.dt * 1000);
+            itemDate.setHours(0,0,0,0);
+            if (itemDate.getTime() <= today.getTime()) return; 
+
+            const day = itemDate.toISOString().split('T')[0];
+            if (!dailyData[day]) {
+                dailyData[day] = { temps: [], icons: {} };
+            }
+            dailyData[day].temps.push(item.main.temp);
+            const icon = item.weather[0].icon;
+            dailyData[day].icons[icon] = (dailyData[day].icons[icon] || 0) + 1;
+        });
+
+        dailyItems = Object.keys(dailyData).slice(0, 5).map(day => {
+            const dayData = dailyData[day];
+            const repIcon = Object.keys(dayData.icons).reduce((a, b) => dayData.icons[a] > dayData.icons[b] ? a : b);
+            return {
+                day: new Date(`${day}T00:00:00`).toLocaleDateString(navigator.language, { weekday: 'short' }),
+                maxTemp: Math.round(Math.max(...dayData.temps)),
+                minTemp: Math.round(Math.min(...dayData.temps)),
+                icon: getAccuWeatherIconUrl(repIcon),
+                description: 'Daily forecast'
+            }
+        });
+    }
+
+    if(dailyItems.length === 0) return <div className="md:col-span-2 weather-card p-6"><h2 className="text-2xl font-semibold text-gray-700 mb-4">5-Day Forecast</h2><p>Daily forecast data not available.</p></div>
+    
+    return (
+        <div className="md:col-span-2 weather-card p-6">
+            <h2 className="text-2xl font-semibold text-gray-700 mb-4">5-Day Forecast</h2>
+            <div className="forecast-container grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pb-4">
+                {dailyItems.map((item, index) => (
+                    <div key={index} className="forecast-card flex flex-col text-center p-4 rounded-xl transition-transform duration-200 ease-in-out hover:scale-105 hover:shadow-lg">
+                        <p className="font-semibold text-blue-800 text-sm mb-1">{item.day}</p>
+                        <img src={item.icon} alt={item.description} className="w-20 h-20 mx-auto my-1 drop-shadow-lg object-contain"/>
+                        <p className="text-lg font-medium text-gray-800 mt-1">
+                            <span className="text-red-600">{item.maxTemp}°</span> / <span className="text-blue-600">{item.minTemp}{tempUnit}</span>
+                        </p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const WelcomeMessage: React.FC = () => (
+    <div className="text-center py-16 text-gray-500 fade-in min-h-[500px] flex flex-col justify-center items-center" role="main">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-blue-300 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+        </svg>
+        <h2 className="text-2xl font-medium mb-2 text-gray-700">Welcome to Weather Pocket Pro</h2>
+        <p className="max-w-md">
+            To get started, search for a city by name or use the 
+            <span className="font-semibold text-gray-600"> "My Location" </span> 
+            button to see the weather for your current position.
+        </p>
+    </div>
+);
+
+const App: React.FC = () => {
+    const [data, setData] = useState<AppData | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [geolocating, setGeolocating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [units, setUnits] = useState<Units>(() => 
+        (localStorage.getItem('weatherAppUnits') as Units) || 'metric'
+    );
+    const [provider, setProvider] = useState<WeatherProvider>('owm');
+    const [activeTab, setActiveTab] = useState<ActiveTab>('map');
+    const [modalContent, setModalContent] = useState<ModalContent>(null);
+    const [lastQuery, setLastQuery] = useState<string | null>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    const { favorites, isFavorite, toggleFavorite, removeFavorite } = useFavorites(data?.location?.name || null);
+
+    const executeFetch = useCallback(async (query: string, p: WeatherProvider, u: Units) => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+
+        setLoading(true);
+        setError(null);
+        try {
+            const weatherData = await fetchWeatherData(p, query, u, abortControllerRef.current.signal);
+            setData(weatherData);
+            setLastQuery(query);
+        } catch (err: any) {
+            if (err.name === 'AbortError') return;
+            setError(err.message || 'An unknown error occurred.');
+            setData(null);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const handleSearch = useCallback((city: string) => {
+        if (city.trim()) {
+            executeFetch(`q=${encodeURIComponent(city.trim())}`, provider, units);
+        }
+    }, [executeFetch, provider, units]);
+
+    const handleGeolocate = useCallback(() => {
+        setGeolocating(true);
+        setError(null);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                executeFetch(`lat=${latitude}&lon=${longitude}`, provider, units);
+                setGeolocating(false);
+            },
+            (err) => {
+                setError(`Geolocation error: ${err.message}. Please search for a city.`);
+                setGeolocating(false);
+            },
+            { timeout: 10000, maximumAge: 0 }
+        );
+    }, [provider, units, executeFetch]);
+
+    useEffect(() => {
+        localStorage.setItem('weatherAppUnits', units);
+        if (lastQuery) {
+            executeFetch(lastQuery, provider, units);
+        }
+    }, [provider, units, lastQuery, executeFetch]);
+
+    useEffect(() => {
+        const theme = getThemeClassName(data?.owm?.current);
+        document.getElementById('appBody')?.setAttribute('class', 
+            `min-h-screen flex items-center justify-center p-4 md:p-6 overflow-hidden ${theme}`
+        );
+    }, [data]);
+
+    useEffect(() => {
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, []);
+
+    return (
+        <div className="main-container p-6 md:p-8 w-full max-w-6xl">
+            <Header onSearch={handleSearch} onGeolocate={handleGeolocate} units={units} setUnits={setUnits} provider={provider} setProvider={setProvider} favorites={favorites} removeFavorite={removeFavorite} />
+            
+            {error && !loading && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
+                    <strong className="font-bold">Error: </strong>
+                    <span className="block sm:inline">{error}</span>
+                </div>
+            )}
+            
+            {loading && <SkeletonLoader />}
+            
+            {!loading && data && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 fade-in">
+                    <CurrentWeather data={data} provider={provider} units={units} isFavorite={isFavorite} toggleFavorite={toggleFavorite} />
+                    <MapTabs activeTab={activeTab} setActiveTab={setActiveTab} setModalContent={setModalContent} location={data.location}/>
+                    <HourlyForecast data={data} provider={provider} units={units} />
+                    <DailyForecast data={data} provider={provider} units={units} />
+                </div>
+            )}
+            
+            {!loading && !data && !error && (
+                <WelcomeMessage />
+            )}
+
+            <footer className="app-footer">
+                <span>Designed by Marc Andréas Yao</span>
+                <span>Copyright © {new Date().getFullYear()}</span>
+            </footer>
+
+            {modalContent && <MapModal modalContent={modalContent} location={data?.location || null} onClose={() => setModalContent(null)} />}
+        </div>
+    );
+};
+
+export default App;

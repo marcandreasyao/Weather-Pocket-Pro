@@ -1,0 +1,8 @@
+{
+  "name": "Weather Pocket Pro",
+  "description": "A comprehensive weather application that provides current weather conditions, hourly and daily forecasts, and interactive weather maps. Users can search for any city, get weather for their current location, and save their favorite places.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "prompt": ""
+}
