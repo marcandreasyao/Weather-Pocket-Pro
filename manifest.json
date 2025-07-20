@@ -1,0 +1,29 @@
+{
+  "name": "Weather Pocket Pro",
+  "short_name": "Weather Pro",
+  "description": "Your daily Weather Pocket App, prioritizing accuracy, reliability and transparency!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f9ff",
+  "theme_color": "#e0f2fe",
+  "icons": [
+    {
+      "src": "Weather-pocket-Pro-Logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "Weather-pocket-Pro-Logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "Weather-pocket-Pro-Logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
