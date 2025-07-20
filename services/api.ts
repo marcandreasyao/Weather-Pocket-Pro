@@ -38,35 +38,19 @@ async function fetchOwmData(query: string, units: Units): Promise<AppData> {
 
 async function fetchTomorrowData(query: string, units: Units): Promise<AppData> {
     let lat, lon;
-    
-    try {
-        if (query.startsWith('lat=')) {
-            const params = new URLSearchParams(query);
-            lat = parseFloat(params.get('lat') || '0');
-            lon = parseFloat(params.get('lon') || '0');
-            if (isNaN(lat) || isNaN(lon)) {
-                throw new Error('Invalid coordinates format');
-            }
-        } else {
-            const city = query.startsWith('q=') ? decodeURIComponent(query.slice(2)) : query;
-            const geoUrl = `${GEO_API_BASE}/direct?q=${encodeURIComponent(city)}&limit=1&appid=${OWM_API_KEY}`;
-            const geoRes = await fetch(geoUrl);
-            if (!geoRes.ok) {
-                throw new Error('Could not find city for geocoding.');
-            }
-            const geoData = await geoRes.json();
-            if (!geoData || geoData.length === 0) {
-                throw new Error('City not found');
-            }
-            lat = geoData[0].lat;
-            lon = geoData[0].lon;
-        }
-        
-        if (!lat || !lon) {
-            throw new Error('Could not determine location coordinates');
-        }
-    } catch (error: any) {
-        throw new Error(`Location error: ${error?.message || 'Unknown error occurred'}`);
+    if (query.startsWith('lat=')) {
+        const params = new URLSearchParams(query);
+        lat = parseFloat(params.get('lat') || '0');
+        lon = parseFloat(params.get('lon') || '0');
+    } else {
+        const city = decodeURIComponent(query.slice(2));
+        const geoUrl = `${GEO_API_BASE}/direct?q=${encodeURIComponent(city)}&limit=1&appid=${OWM_API_KEY}`;
+        const geoRes = await fetch(geoUrl);
+        if (!geoRes.ok) throw new Error('Could not find city for geocoding.');
+        const geoData = await geoRes.json();
+        if (!geoData || geoData.length === 0) throw new Error('City not found for Tomorrow.io');
+        lat = geoData[0].lat;
+        lon = geoData[0].lon;
     }
 
     const locationString = `${lat},${lon}`;
@@ -148,47 +132,6 @@ export async function fetchCitySuggestions(query: string): Promise<string[]> {
 }
 
 // --- Utility Functions ---
-
-export function getTomorrowWeatherCode(code: number): string {
-    // Map Tomorrow.io codes to OpenWeatherMap icon codes
-    // OpenWeatherMap uses codes like: 01d, 02d, 03d, 04d, 09d, 10d, 11d, 13d, 50d
-    // where 'd' can be replaced with 'n' for night
-    switch (code) {
-        case 1000: return '01d'; // Clear sky
-        case 1100: return '02d'; // Mostly Clear - few clouds
-        case 1101: return '03d'; // Partly Cloudy - scattered clouds
-        case 1102: return '04d'; // Mostly Cloudy - broken clouds
-        case 1001: return '04d'; // Cloudy - overcast clouds
-        case 2000: // Fog
-        case 2100: // Light Fog
-            return '50d'; // mist
-        case 4000: // Drizzle
-        case 4200: // Light Rain
-            return '09d'; // shower rain
-        case 4001: // Rain
-        case 4201: // Heavy Rain
-            return '10d'; // rain
-        case 5000: // Snow
-        case 5001: // Flurries
-        case 5100: // Light Snow
-        case 5101: // Heavy Snow
-            return '13d'; // snow
-        case 6000: // Freezing Drizzle
-        case 6001: // Freezing Rain
-        case 6200: // Light Freezing Rain
-        case 6201: // Heavy Freezing Rain
-            return '13d'; // snow
-        case 7000: // Ice Pellets
-        case 7101: // Heavy Ice Pellets
-        case 7102: // Light Ice Pellets
-            return '13d'; // snow
-        case 8000: // Thunderstorm
-        case 8001: // Thunderstorm with Rain
-            return '11d'; // thunderstorm
-        default:
-            return '01d'; // clear sky as fallback
-    }
-}
 
 export function formatTime(unixTimestamp: number, timezoneOffsetSeconds: number): string {
   if (!unixTimestamp) return '--:--';

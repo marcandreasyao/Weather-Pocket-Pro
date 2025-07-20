@@ -223,7 +223,9 @@ const Header: React.FC<{
 
     return (
         <>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6 md:mb-8 text-center">Weather Pocket Pro</h1>
+            <div className="w-full flex justify-center">
+                <h1 className="text-3xl md:text-4xl font-bold mb-6 md:mb-8 bg-gradient-to-r from-[#007AFF] via-[#004999] to-[#16A14A] inline-block text-transparent bg-clip-text">Weather Pocket Pro</h1>
+            </div>
             <div className="mb-6 md:mb-8 flex flex-col sm:flex-row items-center justify-center sm:justify-start w-full gap-4 sm:gap-3">
                 {/* Search Group */}
                 <div className="relative flex items-center gap-3 w-full sm:w-auto min-w-[280px] sm:min-w-0">
@@ -553,7 +555,7 @@ const WelcomeMessage: React.FC = () => (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-blue-300 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
         </svg>
-        <h2 className="text-2xl font-medium mb-2 text-gray-700">Welcome to Weather Pocket Pro</h2>
+        <h2 className="text-2xl font-semibold mb-2 text-gray-800">Welcome to Weather Pocket Pro</h2>
         <p className="max-w-md">
             To get started, search for a city by name or use the 
             <span className="font-semibold text-gray-600"> "My Location" </span> 
