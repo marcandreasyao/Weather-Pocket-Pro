@@ -223,9 +223,10 @@ const Header: React.FC<{
 
     return (
         <>
-            <div className="w-full flex justify-center">
+            {/* <div className="w-full flex justify-center">
                 <h1 className="text-3xl md:text-4xl font-bold mb-6 md:mb-8 bg-gradient-to-r from-[#007AFF] via-[#004999] to-[#16A14A] inline-block text-transparent bg-clip-text">Weather Pocket Pro</h1>
-            </div>
+            </div> */}
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6 md:mb-8 text-center">Weather Pocket Pro</h1>
             <div className="mb-6 md:mb-8 flex flex-col sm:flex-row items-center justify-center sm:justify-start w-full gap-4 sm:gap-3">
                 {/* Search Group */}
                 <div className="relative flex items-center gap-3 w-full sm:w-auto min-w-[280px] sm:min-w-0">
@@ -309,7 +310,11 @@ const Header: React.FC<{
                                         <path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79zM1 10.5h3v2H1zM11 .55h2V3.5h-2zm8.04 2.495l1.408 1.407-1.79 1.79-1.407-1.408zm-1.8 15.115l1.79 1.8 1.41-1.41-1.8-1.79zM20 10.5h3v2h-3zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm-1 4h2v2.95h-2zm-7.45-.96l1.41 1.41 1.79-1.8-1.41-1.41z"/>
                                     </svg>
                                 )}
-                                {provider === 'owm' ? 'OpenWeatherMap' : 'Tomorrow.io'}
+                                {provider === 'owm' ? 'Standard' : 'Advanced'}
+                                {/* {provider === 'owm' ? 'OpenWeatherMap' : 'Tomorrow.io'} */}
+                                {/* <span className="text-xs text-gray-500">
+                                    {provider === 'owm' ? '(Standard)' : '(Advanced)'}
+                                </span> */}
                             </span>
                             <svg className={`w-4 h-4 transition-transform ${showProviderDropdown ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -324,7 +329,8 @@ const Header: React.FC<{
                                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-5.5l4.88-4.88-1.41-1.41L10 11.68 7.71 9.39l-1.42 1.42L10 14.5z"/>
                                     </svg>
-                                    OpenWeatherMap
+                                    Standard
+                                    {/* Standard (OpenWeatherMap) */}
                                 </li>
                                 <li
                                     className={`flex items-center gap-2 px-3 py-2 hover:bg-blue-50 cursor-pointer transition-colors ${provider === 'tomorrow' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'}`}
@@ -333,7 +339,8 @@ const Header: React.FC<{
                                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79zM1 10.5h3v2H1zM11 .55h2V3.5h-2zm8.04 2.495l1.408 1.407-1.79 1.79-1.407-1.408zm-1.8 15.115l1.79 1.8 1.41-1.41-1.8-1.79zM20 10.5h3v2h-3zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm-1 4h2v2.95h-2zm-7.45-.96l1.41 1.41 1.79-1.8-1.41-1.41z"/>
                                     </svg>
-                                    Tomorrow.io
+                                    Advanced 
+                                    {/* Advanced (Tomorrow.io) */}
                                 </li>
                             </ul>
                         )}
@@ -555,7 +562,7 @@ const WelcomeMessage: React.FC = () => (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 text-blue-300 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
         </svg>
-        <h2 className="text-2xl font-semibold mb-2 text-gray-800">Welcome to Weather Pocket Pro</h2>
+        <h2 className="text-2xl font-medium mb-2 text-gray-700">Welcome to Weather Pocket Pro</h2>
         <p className="max-w-md">
             To get started, search for a city by name or use the 
             <span className="font-semibold text-gray-600"> "My Location" </span> 
