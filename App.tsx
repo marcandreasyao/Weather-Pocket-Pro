@@ -415,7 +415,11 @@ const CurrentWeather: React.FC<{
                     <p className="text-6xl md:text-7xl font-bold text-gray-900">{displayData.temperature}{tempUnit}</p>
                     <p className="text-xl text-gray-700 mt-1 capitalize">{displayData.description}</p>
                 </div>
-                <img src={displayData.icon} alt={displayData.description} className="w-24 h-24 md:w-32 md:h-32 drop-shadow-lg object-contain" />
+                <img src={displayData.icon} alt={displayData.description} className="w-24 h-24 md:w-32 md:h-32 drop-shadow-lg object-contain" 
+                     draggable="false" 
+                     onContextMenu={(e) => e.preventDefault()} 
+                     onDragStart={(e) => e.preventDefault()}
+                     style={{ userSelect: 'none', pointerEvents: 'none' }} />
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm text-gray-600 mt-4">
                 <p className="flex items-center"><ThermometerIcon /><span className="font-medium text-gray-700 mr-1">Feels like:</span> {displayData.feelsLike}{tempUnit}</p>
@@ -469,7 +473,11 @@ const HourlyForecast: React.FC<{ data: AppData | null; provider: WeatherProvider
                 {hourlyItems.map((item, index) => (
                     <div key={index} className="hourly-card flex-shrink-0 w-24 text-center p-3 rounded-lg">
                         <p className="text-xs font-medium text-gray-600">{item.time}</p>
-                        <img src={item.icon} alt={item.description} className="w-10 h-10 mx-auto drop-shadow-lg object-contain" />
+                        <img src={item.icon} alt={item.description} className="w-10 h-10 mx-auto drop-shadow-lg object-contain" 
+                             draggable="false" 
+                             onContextMenu={(e) => e.preventDefault()} 
+                             onDragStart={(e) => e.preventDefault()}
+                             style={{ userSelect: 'none', pointerEvents: 'none' }} />
                         <p className="text-lg font-semibold text-gray-800">{item.temp}°</p>
                         {item.pop > 5 ? <p className="text-xs text-blue-600 font-medium mt-1">{item.pop}%</p> : <p className="text-xs text-transparent mt-1">.</p>}
                     </div>
@@ -546,7 +554,11 @@ const DailyForecast: React.FC<{ data: AppData | null; provider: WeatherProvider;
                 {dailyItems.map((item, index) => (
                     <div key={index} className="forecast-card flex flex-col text-center p-4 rounded-xl transition-transform duration-200 ease-in-out hover:scale-105 hover:shadow-lg">
                         <p className="font-semibold text-blue-800 text-sm mb-1">{item.day}</p>
-                        <img src={item.icon} alt={item.description} className="w-20 h-20 mx-auto my-1 drop-shadow-lg object-contain"/>
+                        <img src={item.icon} alt={item.description} className="w-20 h-20 mx-auto my-1 drop-shadow-lg object-contain"
+                             draggable="false" 
+                             onContextMenu={(e) => e.preventDefault()} 
+                             onDragStart={(e) => e.preventDefault()}
+                             style={{ userSelect: 'none', pointerEvents: 'none' }} />
                         <p className="text-lg font-medium text-gray-800 mt-1">
                             <span className="text-red-600">{item.maxTemp}°</span> / <span className="text-blue-600">{item.minTemp}{tempUnit}</span>
                         </p>

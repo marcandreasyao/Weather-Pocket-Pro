@@ -9,9 +9,10 @@ const OWM_API_KEY = '041fbadab5535ba6219544663f5cb1a1';
 interface WeatherMapProps {
   location: LocationData | null;
   isModal: boolean;
+  activeTab?: ActiveTab;
 }
 
-export const WeatherMap: React.FC<WeatherMapProps> = ({ location, isModal }) => {
+export const WeatherMap: React.FC<WeatherMapProps> = ({ location, isModal, activeTab }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
 
@@ -58,9 +59,11 @@ export const WeatherMap: React.FC<WeatherMapProps> = ({ location, isModal }) => 
 
   useEffect(() => {
     if (mapRef.current) {
-      setTimeout(() => mapRef.current.invalidateSize(), 300);
+      setTimeout(() => {
+        mapRef.current.invalidateSize();
+      }, 300); // A small delay can help ensure the container has resized.
     }
-  }, [isModal]);
+  }, [isModal, activeTab]);
 
   if (!location) {
     return <div id="weatherMap" className="flex items-center justify-center"><p className="text-center text-gray-500 p-4">Map will load after location is determined.</p></div>;
@@ -161,7 +164,7 @@ export const MapTabs: React.FC<MapTabsProps> = ({ activeTab, setActiveTab, setMo
                 <button id="expandMapButton" className="icon-button" title="Expand Map" onClick={() => setModalContent('map')}>
                     <ExpandIcon />
                 </button>
-                <WeatherMap location={location} isModal={false} />
+                <WeatherMap location={location} isModal={false} activeTab={activeTab} />
                 <p className="text-xs text-gray-500 mt-3 text-center">Map: © OpenStreetMap/ESRI | Weather: © OpenWeatherMap</p>
             </div>
             <div style={{ display: activeTab === 'data' ? 'block' : 'none' }} className="relative">

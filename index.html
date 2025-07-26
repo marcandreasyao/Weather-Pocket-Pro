@@ -49,7 +49,7 @@
           justify-content: center;
           align-items: center;
           min-height: 100vh;
-          padding: 0.5rem;
+          padding: 1rem;
           box-sizing: border-box;
         }
 
@@ -456,6 +456,23 @@
         .dark .app-footer { color: #9ca3af; border-top-color: rgba(100, 116, 139, 0.3); }
         .app-footer span { display: block; margin-bottom: 0.25rem; }
 
+        /* Weather icon protection - disable all interactions */
+        .weather-card img, .hourly-card img, .forecast-card img {
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+            -webkit-user-drag: none !important;
+            -khtml-user-drag: none !important;
+            -moz-user-drag: none !important;
+            -o-user-drag: none !important;
+            user-drag: none !important;
+            -webkit-touch-callout: none !important;
+            pointer-events: none !important;
+            touch-action: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+
         /* Mobile-specific styles for better UX */
         @media (max-width: 640px) {
             body {
@@ -535,15 +552,13 @@
                 margin-top: 0.25rem !important;
             }
 
-            .weather-card img {
-                width: 4rem !important;
-                height: 4rem !important;
-            }
-
-            /* Weather details grid */
+        .weather-card img {
+            width: 4rem !important;
+            height: 4rem !important;
+        }            /* Weather details grid */
             .weather-card .grid {
                 gap: 0.3rem !important;
-                font-size: 0.6rem !important;
+                font-size: 0.62rem !important;
                 margin-top: 0.70rem !important;
             }
 
