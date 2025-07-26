@@ -415,7 +415,7 @@ const CurrentWeather: React.FC<{
                     <p className="text-6xl md:text-7xl font-bold text-gray-900">{displayData.temperature}{tempUnit}</p>
                     <p className="text-xl text-gray-700 mt-1 capitalize">{displayData.description}</p>
                 </div>
-                <img src={displayData.icon} alt={displayData.description} className="w-24 h-24 md:w-32 md:h-32 drop-shadow-lg object-contain" 
+                <img src={displayData.icon} alt={displayData.description} className="w-24 h-24 md:w-32 md:h-32 drop-shadow-lg object-contain flex-shrink-0" 
                      draggable="false" 
                      onContextMenu={(e) => e.preventDefault()} 
                      onDragStart={(e) => e.preventDefault()}
