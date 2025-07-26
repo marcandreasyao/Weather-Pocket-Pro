@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { track } from '@vercel/analytics';
 import { AppData, LocationData, OwmCurrentWeather, OwmForecast, OwmForecastItem, TomorrowCurrentData, TomorrowForecastData, TomorrowForecastTimeline, Units, WeatherProvider, ActiveTab, ModalContent } from './types';
 import { fetchWeatherData, fetchCitySuggestions, formatTime, degreesToCardinal, getAccuWeatherIconUrl, getThemeClassName } from './services/api';
 import { SearchIcon, LocationIcon, HomeIcon, BookmarkIcon, RemoveFavoriteIcon, ThermometerIcon, HumidityIcon, WindIcon, WindDirectionIcon as WindDirSvg, PressureIcon, UvIndexIcon, SunriseIcon, SunsetIcon } from './components/Icons';
@@ -24,9 +25,17 @@ const useFavorites = (currentCityName: string | null) => {
 
     const toggleFavorite = useCallback(() => {
         if (!currentCityName) return;
-        const newFavorites = favorites.includes(currentCityName)
+        const isCurrentlyFavorite = favorites.includes(currentCityName);
+        const newFavorites = isCurrentlyFavorite
             ? favorites.filter(fav => fav !== currentCityName)
             : [...favorites, currentCityName];
+        
+        // Track favorite action
+        track(isCurrentlyFavorite ? 'favorite_removed' : 'favorite_added', {
+            city: currentCityName,
+            totalFavorites: newFavorites.length
+        });
+        
         setFavorites(newFavorites);
         try {
             localStorage.setItem('weatherAppFavorites', JSON.stringify(newFavorites));
@@ -35,6 +44,13 @@ const useFavorites = (currentCityName: string | null) => {
     
     const removeFavorite = (city: string) => {
         const newFavorites = favorites.filter(fav => fav !== city);
+        
+        // Track favorite removal
+        track('favorite_removed_from_list', {
+            city: city,
+            totalFavorites: newFavorites.length
+        });
+        
         setFavorites(newFavorites);
         localStorage.setItem('weatherAppFavorites', JSON.stringify(newFavorites));
     };
@@ -75,7 +91,7 @@ const SkeletonLoader: React.FC = () => (
 
 
 const Header: React.FC<{
-    onSearch: (city: string) => void;
+    onSearch: (city: string, source?: 'search' | 'favorite') => void;
     onGeolocate: () => void;
     units: Units;
     setUnits: (units: Units) => void;
@@ -277,7 +293,16 @@ const Header: React.FC<{
                          {showFavorites && (
                             <ul id="favoritesList" className="show">
                                 {favorites.length > 0 ? favorites.map(fav => (
-                                    <li key={fav} onClick={() => { onSearch(fav); setShowFavorites(false); }}>
+                                    <li key={fav} onClick={() => { 
+                                        // Track favorite selection
+                                        track('favorite_selected', {
+                                            city: fav,
+                                            provider: provider,
+                                            units: units
+                                        });
+                                        onSearch(fav, 'favorite'); 
+                                        setShowFavorites(false); 
+                                    }}>
                                         <span>{fav}</span>
                                         <button className="remove-favorite-btn" title={`Remove ${fav}`} onClick={(e) => { e.stopPropagation(); removeFavorite(fav);}}>
                                             <RemoveFavoriteIcon />
@@ -610,19 +635,48 @@ const App: React.FC = () => {
         }
     }, []);
 
-    const handleSearch = (city: string) => {
-        if (city.trim()) executeFetch(`q=${encodeURIComponent(city.trim())}`, provider, units);
+    const handleSearch = (city: string, source: 'search' | 'favorite' = 'search') => {
+        if (city.trim()) {
+            // Track search event
+            track('weather_search', {
+                query: city.trim(),
+                provider: provider,
+                units: units,
+                source: source
+            });
+            executeFetch(`q=${encodeURIComponent(city.trim())}`, provider, units);
+        }
     };
 
     const handleGeolocate = useCallback(() => {
         setLoading(true);
         setError(null);
+        
+        // Track geolocation usage
+        track('geolocation_requested', {
+            provider: provider,
+            units: units
+        });
+        
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
+                
+                // Track successful geolocation
+                track('geolocation_success', {
+                    provider: provider,
+                    units: units
+                });
+                
                 executeFetch(`lat=${latitude}&lon=${longitude}`, provider, units);
             },
             (err) => {
+                // Track geolocation error
+                track('geolocation_error', {
+                    error: err.message,
+                    provider: provider
+                });
+                
                 setError(`Geolocation error: ${err.message}. Please search for a city.`);
                 setLoading(false);
             }
@@ -638,6 +692,12 @@ const App: React.FC = () => {
     useEffect(() => {
         localStorage.setItem('weatherAppUnits', units);
         if(lastQuery) {
+            // Track provider/units change
+            track('settings_changed', {
+                provider: provider,
+                units: units,
+                hasActiveQuery: !!lastQuery
+            });
             executeFetch(lastQuery, provider, units);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps

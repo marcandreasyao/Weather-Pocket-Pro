@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
+import { track } from '@vercel/analytics';
 import { LocationData, ActiveTab, ModalContent } from '../types';
 import { ExpandIcon, CloseIcon } from './Icons';
 
@@ -114,10 +115,18 @@ interface MapModalProps {
 }
 
 export const MapModal: React.FC<MapModalProps> = ({ modalContent, location, onClose }) => {
+    const handleClose = () => {
+        track('modal_closed', { 
+            type: modalContent,
+            location: location?.name || 'unknown'
+        });
+        onClose();
+    };
+
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
            if (event.key === 'Escape') {
-              onClose();
+              handleClose();
            }
         };
         window.addEventListener('keydown', handleEsc);
@@ -132,9 +141,9 @@ export const MapModal: React.FC<MapModalProps> = ({ modalContent, location, onCl
     if (!modalContent) return null;
 
     return (
-        <div id="mapModalOverlay" className="visible" onClick={onClose}>
+        <div id="mapModalOverlay" className="visible" onClick={handleClose}>
             <div id="mapModalContent" onClick={e => e.stopPropagation()}>
-                <button id="closeMapModalButton" className="icon-button" title="Close Map" onClick={onClose}>
+                <button id="closeMapModalButton" className="icon-button" title="Close Map" onClick={handleClose}>
                     <CloseIcon />
                 </button>
                 <div id="modalMapContentContainer">
@@ -157,18 +166,48 @@ export const MapTabs: React.FC<MapTabsProps> = ({ activeTab, setActiveTab, setMo
     return (
         <div className="weather-card p-4 tab-container">
             <div className="tab-buttons">
-                <button className={`tab-button ${activeTab === 'map' ? 'active' : ''}`} onClick={() => setActiveTab('map')}>Weather Map</button>
-                <button className={`tab-button ${activeTab === 'data' ? 'active' : ''}`} onClick={() => setActiveTab('data')}>Weather Data</button>
+                <button className={`tab-button ${activeTab === 'map' ? 'active' : ''}`} onClick={() => {
+                    if (activeTab !== 'map') {
+                        track('tab_changed', { 
+                            from: activeTab, 
+                            to: 'map',
+                            location: location?.name || 'unknown'
+                        });
+                    }
+                    setActiveTab('map');
+                }}>Weather Map</button>
+                <button className={`tab-button ${activeTab === 'data' ? 'active' : ''}`} onClick={() => {
+                    if (activeTab !== 'data') {
+                        track('tab_changed', { 
+                            from: activeTab, 
+                            to: 'data',
+                            location: location?.name || 'unknown'
+                        });
+                    }
+                    setActiveTab('data');
+                }}>Weather Data</button>
             </div>
             <div style={{ display: activeTab === 'map' ? 'block' : 'none' }} className="relative">
-                <button id="expandMapButton" className="icon-button" title="Expand Map" onClick={() => setModalContent('map')}>
+                <button id="expandMapButton" className="icon-button" title="Expand Map" onClick={() => {
+                    track('modal_opened', { 
+                        type: 'map',
+                        location: location?.name || 'unknown'
+                    });
+                    setModalContent('map');
+                }}>
                     <ExpandIcon />
                 </button>
                 <WeatherMap location={location} isModal={false} activeTab={activeTab} />
                 <p className="text-xs text-gray-500 mt-3 text-center">Map: © OpenStreetMap/ESRI | Weather: © OpenWeatherMap</p>
             </div>
             <div style={{ display: activeTab === 'data' ? 'block' : 'none' }} className="relative">
-                <button id="expandDataButton" className="icon-button" title="Expand Data View" onClick={() => setModalContent('data')}>
+                <button id="expandDataButton" className="icon-button" title="Expand Data View" onClick={() => {
+                    track('modal_opened', { 
+                        type: 'data',
+                        location: location?.name || 'unknown'
+                    });
+                    setModalContent('data');
+                }}>
                     <ExpandIcon />
                 </button>
                 <DataMap location={location} />
