@@ -32,9 +32,25 @@
           background-image: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
           transition: background-image 0.8s cubic-bezier(0.4, 0, 0.2, 1);
           overflow: hidden;
+          margin: 0;
+          padding: 0;
+          min-height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
         }
         body.modal-open {
             overflow: hidden;
+        }
+
+        #root {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 100vh;
+          padding: 0.5rem;
+          box-sizing: border-box;
         }
 
         .main-container {
@@ -45,9 +61,12 @@
           border: 1px solid rgba(226, 232, 240, 0.4);
           box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
           max-height: 95vh;
+          width: 100%;
+          max-width: 72rem;
           overflow-y: auto;
           -ms-overflow-style: none;
           scrollbar-width: none;
+          margin: 0 auto;
         }
         .main-container::-webkit-scrollbar {
             display: none;
@@ -182,6 +201,7 @@
             background-color: rgba(255, 255, 255, 0.7);
             border: 1px solid rgba(203, 213, 225, 0.5);
             color: #4b5563;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
         #favoritesButton.has-favorites {
             background-color: #fffbeb;
@@ -204,15 +224,17 @@
             min-width: 200px;
             max-height: 300px;
             overflow-y: auto;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
         #favoritesList li {
             padding: 0.6rem 0.8rem;
             border-radius: 0.5rem;
             cursor: pointer;
-            transition: background-color 0.15s ease;
+            transition: background-color 0.15s ease, color 0.15s ease;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            color: #374151;
         }
         #favoritesList li:hover { background: rgba(59, 130, 246, 0.1); }
         .remove-favorite-btn {
@@ -220,7 +242,28 @@
             opacity: 0.5; transition: opacity 0.2s ease;
         }
         #favoritesList li:hover .remove-favorite-btn { opacity: 1; }
-        .remove-favorite-btn svg { width: 0.9rem; height: 0.9rem; stroke: #ef4444; }
+        .remove-favorite-btn svg { 
+            width: 0.9rem; height: 0.9rem; stroke: #ef4444; 
+            transition: stroke 0.3s ease;
+        }
+
+        /* Provider dropdown styles */
+        .provider-dropdown {
+            position: relative;
+        }
+        .provider-list {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px) saturate(150%);
+            border: 1px solid rgba(226, 232, 240, 0.4);
+            color: #374151;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+        .provider-list li {
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+        .provider-list li:hover {
+            background: rgba(59, 130, 246, 0.1) !important;
+        }
 
         .weather-detail-icon { width: 0.85rem; height: 0.85rem; margin-right: 0.5rem; opacity: 0.7; display: inline-block; vertical-align: middle; }
         .wind-direction-icon {
@@ -339,6 +382,57 @@
         .dark .icon-button { background-color: rgba(51, 65, 85, 0.6); border-color: rgba(100, 116, 139, 0.5); }
         .dark .icon-button:hover { background-color: rgba(71, 85, 105, 0.7); }
         .dark #mapModalContent { background-color: rgba(30, 41, 59, 0.75); border-color: rgba(71, 85, 105, 0.5); }
+        
+        /* Dark theme styles for favorites dropdown */
+        .dark #favoritesButton {
+            background-color: rgba(51, 65, 85, 0.7);
+            border: 1px solid rgba(100, 116, 139, 0.5);
+            color: #d1d5db;
+        }
+        .dark #favoritesButton.has-favorites {
+            background-color: rgba(92, 77, 0, 0.6);
+            border-color: rgba(245, 158, 11, 0.6);
+            color: #fbbf24;
+        }
+        .dark #favoritesList {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(10px) saturate(150%);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            color: #f1f5f9;
+        }
+        .dark #favoritesList li {
+            color: #f1f5f9;
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+        .dark #favoritesList li:hover {
+            background: rgba(59, 130, 246, 0.2);
+            color: #ffffff;
+        }
+        .dark .remove-favorite-btn svg {
+            stroke: #f87171;
+        }
+        
+        /* Dark theme styles for provider dropdown */
+        .dark .provider-list {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px) saturate(150%);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            color: #f1f5f9;
+        }
+        .dark .provider-list li {
+            color: #f1f5f9;
+        }
+        .dark .provider-list li:hover {
+            background: rgba(59, 130, 246, 0.2) !important;
+            color: #ffffff;
+        }
+        .dark .provider-list li.text-blue-600 {
+            color: #60a5fa !important;
+        }
+        .dark .provider-list li.bg-blue-50 {
+            background: rgba(59, 130, 246, 0.15) !important;
+        }
+        
         .dark .tab-button { color: #94a3b8; }
         .dark .tab-button:hover { color: #e2e8f0; }
         .dark .tab-button.active { color: #f1f5f9; border-bottom-color: #60a5fa; }
@@ -361,6 +455,281 @@
         .app-footer { text-align: center; padding-top: 1.5rem; margin-top: 1rem; border-top: 1px solid rgba(203, 213, 225, 0.3); font-size: 0.75rem; color: #6b7280; }
         .dark .app-footer { color: #9ca3af; border-top-color: rgba(100, 116, 139, 0.3); }
         .app-footer span { display: block; margin-bottom: 0.25rem; }
+
+        /* Mobile-specific styles for better UX */
+        @media (max-width: 640px) {
+            body {
+                font-size: 12px;
+                overflow-x: hidden;
+                padding: 0;
+            }
+            
+            #root {
+                padding: 0.5rem;
+                align-items: flex-start;
+                padding-top: 3rem;
+            }
+            
+            .main-container {
+                margin: 0;
+                padding: 1rem;
+                border-radius: 1rem;
+                max-height: calc(100vh - 1rem);
+                width: 100%;
+                max-width: none;
+            }
+
+            /* Header adjustments */
+            h1 {
+                font-size: 1.75rem !important;
+                margin-bottom: 1rem !important;
+                font-weight: 700;
+            }
+
+            /* Search and controls container */
+            .mb-6.md\\:mb-8 {
+                margin-bottom: 1rem !important;
+            }
+
+            /* Action buttons - more compact */
+            .action-button {
+                height: 36px !important;
+                font-size: 0.8rem !important;
+                padding: 0 0.75rem !important;
+                min-height: 36px !important;
+            }
+
+            .action-button svg {
+                width: 0.9rem !important;
+                height: 0.9rem !important;
+                margin-right: 0.3rem !important;
+            }
+
+            /* Search input more compact */
+            .search-input {
+                height: 36px !important;
+                font-size: 0.85rem !important;
+                padding: 0.5rem 0.625rem !important;
+            }
+
+            /* Weather cards - more compact */
+            .weather-card {
+                padding: 1rem !important;
+                border-radius: 0.75rem;
+                margin-bottom: 0.75rem;
+            }
+
+            /* Current weather adjustments */
+            .weather-card h2 {
+                font-size: 1.25rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+
+            .weather-card .text-6xl.md\\:text-7xl {
+                font-size: 3rem !important;
+                line-height: 1.1 !important;
+            }
+
+            .weather-card .text-xl {
+                font-size: 1rem !important;
+                margin-top: 0.25rem !important;
+            }
+
+            .weather-card img {
+                width: 4rem !important;
+                height: 4rem !important;
+            }
+
+            /* Weather details grid */
+            .weather-card .grid {
+                gap: 0.3rem !important;
+                font-size: 0.6rem !important;
+                margin-top: 0.70rem !important;
+            }
+
+            .weather-card .grid p {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+
+            /* Favorite button positioning */
+            #favoriteButton {
+                top: 0.75rem !important;
+                right: 0.75rem !important;
+                width: 2rem !important;
+                height: 2rem !important;
+                padding: 0.25rem !important;
+            }
+
+            #favoriteButton svg {
+                width: 0.9rem !important;
+                height: 0.9rem !important;
+            }
+
+            /* Hourly forecast */
+            .hourly-card {
+                width: 4rem !important;
+                padding: 0.5rem !important;
+                font-size: 0.7rem !important;
+            }
+
+            .hourly-card img {
+                width: 2rem !important;
+                height: 2rem !important;
+            }
+
+            .hourly-card .text-lg {
+                font-size: 0.9rem !important;
+            }
+
+            /* Daily forecast */
+            .forecast-card {
+                padding: 1rem !important;
+                font-size: 0.85rem !important;
+                border-radius: 0.75rem !important;
+                min-height: auto !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: center !important;
+            }
+
+            .forecast-card img {
+                width: 3.5rem !important;
+                height: 3.5rem !important;
+                margin: 0.5rem 0 !important;
+            }
+
+            .forecast-card .text-lg {
+                font-size: 0.95rem !important;
+                margin-top: 0.5rem !important;
+            }
+
+            .forecast-card .font-semibold {
+                font-size: 0.85rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+
+            /* 5-day forecast container */
+            .forecast-container {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important;
+                gap: 0.75rem !important;
+                justify-content: center !important;
+            }
+            
+            /* Ensure forecast cards are properly centered */
+            .forecast-container > * {
+                width: 100% !important;
+                max-width: 120px !important;
+                margin: 0 auto !important;
+            }
+
+            /* Unit toggle */
+            .unit-toggle-label {
+                height: 32px !important;
+                font-size: 0.7rem !important;
+            }
+
+            .unit-toggle-text {
+                font-size: 0.65rem !important;
+                line-height: calc(32px - 6px) !important;
+            }
+
+            /* Provider dropdown */
+            .provider-dropdown button {
+                min-width: 120px !important;
+                font-size: 0.8rem !important;
+            }
+
+            /* Favorites dropdown */
+            #favoritesList {
+                min-width: 160px !important;
+                font-size: 0.8rem !important;
+            }
+
+            #favoritesList li {
+                padding: 0.5rem 0.6rem !important;
+            }
+
+            /* Welcome message */
+            .text-center.py-16 {
+                padding: 2rem 0 !important;
+            }
+
+            .text-center.py-16 h2 {
+                font-size: 1.25rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+
+            .text-center.py-16 p {
+                font-size: 0.85rem !important;
+                line-height: 1.4 !important;
+            }
+
+            .text-center.py-16 svg {
+                width: 4rem !important;
+                height: 4rem !important;
+                margin-bottom: 1rem !important;
+            }
+
+            /* Grid adjustments */
+            .grid.grid-cols-1.md\\:grid-cols-2 {
+                gap: 0.75rem !important;
+            }
+
+            /* Map container */
+            #weatherMap, #meteoblueMapContainer {
+                height: 250px !important;
+            }
+
+            /* Controls group spacing */
+            .gap-4.sm\\:gap-3 {
+                gap: 0.5rem !important;
+            }
+
+            /* Reduce overall spacing */
+            .space-x-3 > * + * {
+                margin-left: 0.5rem !important;
+            }
+
+            /* Footer adjustments */
+            .app-footer {
+                font-size: 0.7rem !important;
+                padding-top: 1rem !important;
+                margin-top: 0.75rem !important;
+            }
+        }
+
+        /* Extra small screens (iPhone SE, etc.) */
+        @media (max-width: 375px) {
+            #root {
+                padding: 0.25rem;
+            }
+            
+            .main-container {
+                margin: 0;
+                padding: 0.75rem;
+            }
+
+            h1 {
+                font-size: 1.5rem !important;
+            }
+
+            .weather-card .text-6xl.md\\:text-7xl {
+                font-size: 2.5rem !important;
+            }
+
+            .provider-dropdown button {
+                min-width: 100px !important;
+            }
+
+            .search-input-wrapper {
+                min-width: 150px !important;
+            }
+        }
 
     </style>
 <script type="importmap">
